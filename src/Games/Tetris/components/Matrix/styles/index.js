@@ -1,9 +1,22 @@
 import styled from 'styled-components';
 
-
-export const Tetris = styled.div.attrs({className: 'Tetris'})`
-
-`;
+const tileProps = {
+  a: {
+    background: 'white'
+  },
+  b: {
+    background: 'red'
+  },
+  c: {
+    background: 'orange'
+  },
+  d: {
+    background: 'green'
+  },
+  null: {
+    background: 'transparent'
+  }
+}
 
 export const GridSquare = styled.div.attrs({className: 'GridSquare'})`
   width: ${props => props.sqSize}px;
@@ -11,7 +24,7 @@ export const GridSquare = styled.div.attrs({className: 'GridSquare'})`
   display: inline-block;
   border: ${props => props.theme.matrix.border.inner};
   border-left: none;
-  background: ${props => (props.tileType) ? 'white' : 'transparent' };
+  background: ${props => tileProps[props.tileType].background}
   border-bottom: none;
 `;
 

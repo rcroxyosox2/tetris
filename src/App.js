@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import GameBoard from 'components/GameBoard';
+import GameBoard from './GameBoard';
 import { ThemeProvider } from 'styled-components';
 import { defaultTheme } from 'Themes/';
 
