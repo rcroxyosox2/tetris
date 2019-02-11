@@ -7,11 +7,18 @@ const withKeyControls = (WrappedComponent) => {
     constructor(props) {
       super(props);
       this.keyControlRef = React.createRef();
+      window.focus();
       window.addEventListener('keydown', this.handleKeyDown);
       window.addEventListener('keyup', this.handleKeyUp);
       window.addEventListener('blur', this.handleBlur);
       this.timers = {};
-      this.repeat = 100;
+      this.repeat = 40;
+    }
+
+    componentWillUnmount() {
+      window.removeEventListener('keydown', this.handleKeyDown);
+      window.removeEventListener('keyup', this.handleKeyUp);
+      window.removeEventListener('blur', this.handleBlur);
     }
 
     handleGameKeydown = (e, { keyCode }) => {
@@ -35,7 +42,7 @@ const withKeyControls = (WrappedComponent) => {
         e.preventDefault();
       }
 
-      if (keyPressed === keyLabels.PRIMARY) {
+      if (keyPressed !== keyLabels.UP && keyPressed !== keyLabels.DOWN) {
         this.handleGameKeydown(e, { keyCode });
         return true;
       }

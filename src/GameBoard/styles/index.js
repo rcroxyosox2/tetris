@@ -7,6 +7,7 @@ export const GameBoardGlobal = createGlobalStyle`
     padding: 0;
   }
   body {
+    color: white;
     background: ${props => props.theme.gameBoard.backgroundColor };
   }
 `

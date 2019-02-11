@@ -1,5 +1,10 @@
 import { keyLabels } from 'Games/Tetris/controls/keyCodes';
 
+export const scoreTypes = {
+  SHAPE: 'shape', // setting a shape on the board,
+  LINE: 'line', // Getting between 1-3 lines
+  TETRIS: 'tetris' // getting 4 lines
+}
 
 export const tileTypes = {
   A: 'a',
@@ -22,6 +27,16 @@ export const collisionsLocations = {
   RIGHT: 'right'
 };
 
+export class Collision {
+  constructor({
+    collisionLocation,
+    collisionWith
+  } = {}) {
+    this.collisionLocation = collisionLocation;
+    this.collisionWith = collisionWith;
+  }
+}
+
 export class Tile {
   constructor({
     position = new Shape.Cord(),
@@ -40,12 +55,14 @@ export class Shape extends Tile {
       [rotationalPositions.E]: [new Shape.Cord(), new Shape.Cord(1,0)]
     },
     position = new Shape.Cord()} = {},
-    tileType = tileTypes.A
+    tileType = tileTypes.A,
+    collision = null
     ) {
       super({position, tileType});
       this.tileType = tileType;
       this.subShapes = subShapes;
       this.position = position;
+      this.collision = collision;
       this.rotationalPosition = rotationalPositions.N;
   }
 
@@ -83,6 +100,17 @@ export class Shape extends Tile {
     return subShapes.map(position => new Tile({position, tileType}));
   }
 
+  setMinBoundingGridFromSubShape(rotationalPosition) {
+    rotationalPosition = (rotationalPosition) ? rotationalPosition : this.rotationalPosition;
+    const subShapes = this.subShapes[rotationalPosition];
+    const minX = Math.min.apply(this, subShapes.map(ss => ss.x));
+    const minY = Math.min.apply(this, subShapes.map(ss => ss.y));
+    return subShapes.map(ss => {
+      ss.x -= (minX > 0) ? minX : 0;
+      ss.y -= (minX > 0) ? minY : 0;
+      return ss;
+    });
+  }
 }
 
 Shape.Cord = class {
@@ -91,6 +119,9 @@ Shape.Cord = class {
     y = (typeof y === 'undefined') ? 0 : y;
     this.x = x;
     this.y = y;
+  }
+  eq(cord) {
+    return cord.x === this.x && cord.y === this.y;
   }
 }
 
@@ -126,14 +157,92 @@ export class LShape extends Shape {
   }
 }
 
-export class Collision {
-  constructor({
-    collisionLocation,
-    shape,
-    collisionWith
-  } = {}) {
-    this.collisionLocation = collisionLocation;
-    this.shape = shape;
-    this.collisionWith = collisionWith;
+export class IShape extends Shape {
+  constructor(props) {
+    super(props);
+    this.subShapes = {
+      [rotationalPositions.N]: [
+        new Shape.Cord(1,0),
+        new Shape.Cord(1,1),
+        new Shape.Cord(1,2),
+        new Shape.Cord(1,3)
+      ],
+      [rotationalPositions.E]: [
+        new Shape.Cord(0,1),
+        new Shape.Cord(1,1),
+        new Shape.Cord(2,1),
+        new Shape.Cord(3,1)
+      ]
+    }
   }
 }
+
+export class OShape extends Shape {
+  constructor(props) {
+    super(props);
+    this.subShapes = {
+      [rotationalPositions.N]: [
+        new Shape.Cord(0,0),
+        new Shape.Cord(0,1),
+        new Shape.Cord(1,0),
+        new Shape.Cord(1,1)
+      ]
+    }
+  }
+}
+
+export class TestShape extends Shape {
+  constructor(props) {
+    super(props);
+    this.subShapes = {
+      [rotationalPositions.N]: [
+        new Shape.Cord(0,0),
+        new Shape.Cord(1,0),
+        new Shape.Cord(2,0),
+        new Shape.Cord(3,0),
+        new Shape.Cord(4,0),
+        new Shape.Cord(5,0),
+        new Shape.Cord(6,0),
+        new Shape.Cord(7,0),
+        new Shape.Cord(8,0),
+        new Shape.Cord(9,0)
+      ]
+    }
+  }
+}
+
+export class YShape extends Shape {
+  constructor(props) {
+    super(props);
+    this.subShapes = {
+      [rotationalPositions.N]: [
+        new Shape.Cord(0,1),
+        new Shape.Cord(1,1),
+        new Shape.Cord(2,1),
+        new Shape.Cord(1,2)
+      ],
+      [rotationalPositions.E]: [
+        new Shape.Cord(1,0),
+        new Shape.Cord(0,1),
+        new Shape.Cord(1,1),
+        new Shape.Cord(1,2)
+      ],
+      [rotationalPositions.S]: [
+        new Shape.Cord(0,1),
+        new Shape.Cord(1,1),
+        new Shape.Cord(2,1),
+        new Shape.Cord(1,0)
+      ],
+      [rotationalPositions.W]: [
+        new Shape.Cord(1,0),
+        new Shape.Cord(2,1),
+        new Shape.Cord(1,1),
+        new Shape.Cord(1,2)
+      ]
+    }
+  }
+}
+
+export const gameShapes = [
+  LShape, IShape, OShape, YShape
+]

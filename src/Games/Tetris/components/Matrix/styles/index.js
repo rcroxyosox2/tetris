@@ -1,4 +1,12 @@
-import styled from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
+
+const explosion = keyframes`
+  0%   {background-color: green;}
+  25%  {background-color: black;}
+  50%  {background-color: yellow;}
+  75%  {background-color: blue;}
+  100% {background-color: transparent;}
+`;
 
 const tileProps = {
   a: {
@@ -24,8 +32,17 @@ export const GridSquare = styled.div.attrs({className: 'GridSquare'})`
   display: inline-block;
   border: ${props => props.theme.matrix.border.inner};
   border-left: none;
-  background: ${props => tileProps[props.tileType].background}
+  background: ${props => tileProps[props.tileType].background};
   border-bottom: none;
+  transition: transform 300ms ease-in-out;
+  ${props => {
+    if (props.exploding) {
+      return css`
+        animation: ${explosion} 100ms normal forwards ease-in-out;
+        animation-iteration-count: 1;
+      `
+    }
+  }}
 `;
 
 export const GridRow = styled.div.attrs({className: 'GridRow'})`
@@ -51,5 +68,5 @@ export const GridMatrix = styled.div.attrs({className: 'GridMatrix'})`
 
 export const GridMatrixContainer = styled.div.attrs({className: 'GridMatrixContainer'})`
   border: 1px solid red;
-  height: 100vh;
+  height: ${ props => props.mini ? '100px' : '100vh'};
 `
