@@ -1,6 +1,6 @@
 import React from 'react';
 import * as styles from './styles';
-import { Shape, Tile, Collision, collisionsLocations, tileTypes, scoreTypes } from 'Games/Tetris/models';
+import { Collision, collisionsLocations, tileTypes } from 'Games/Tetris/models';
 import { makeArray } from 'utils/';
 import { keyLabels } from 'Games/Tetris/controls/keyCodes'
 
@@ -10,7 +10,7 @@ export class GridSquare extends React.PureComponent {
   }
 }
 
-const explosionAnimationTimePerTile = 100;
+const explosionAnimationTimePerTile = 50;
 
 export class GridRow extends React.PureComponent {
 
@@ -21,16 +21,23 @@ export class GridRow extends React.PureComponent {
 
   getNextExplodingIndexs() {
     const cl = this.props.cols.length;
-    return [this.state.explodingIndexs[0]-1, this.state.explodingIndexs[1]+1].map(i => {
-      if (i < -1) { return 0 };
+    const ei = [].concat(this.state.explodingIndexs)
+    const min = Math.min.apply(this, ei);
+    const max = Math.max.apply(this, ei);
+
+    ei.push(min-1);
+    ei.push(max+1);
+
+    return ei.map(i => {
+      if (i < -1) { return -1 };
       if (i > cl) { return cl };
       return i;
     })
   }
 
-  showExplosion(atIndex) {
+  showExplosion({ atIndex1, atIndex2 }) {
     return new Promise((resolve) => {
-      this.setState({explodingIndexs:[atIndex,atIndex]}, () => {
+      this.setState({explodingIndexs:[atIndex1, atIndex2]}, () => {
         const cl = this.props.cols.length;
         this.explodingInterval = setInterval(() => {
           this.setState({explodingIndexs: this.getNextExplodingIndexs()}, () => {
@@ -69,9 +76,57 @@ export class GridMatrixBase extends React.PureComponent {
     super(props)
     window.addEventListener('resize', this.handleResize);
     this.containerRef = React.createRef();
-    this.state = this.getGridSettings();
+    this.state = {};
+    this.state.sqSize = this.getSqSize();
     this.state.grid = this.generateGrid();
     this.rowRefs = makeArray(this.getRowsCols().rows).map(() => React.createRef());
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.shape !== this.getShape()) {
+      this.promiseToDrawToGrid();
+    }
+  }
+
+  componentDidMount() {
+    this.setState({sqSize: this.getSqSize()}, () => {
+      this.promiseToDrawToGrid();
+    })
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.handleResize);
+  }
+
+  handleResize = (onComplete) => {
+    this.setState({ ...this.state, sqSize: this.getSqSize()}, () => {
+      typeof onComplete === 'function' && onComplete();
+    });
+  }
+
+  generateGrid = () => {
+    return makeArray(this.getRowsCols().rows).map(() => makeArray(this.getRowsCols().cols).map(() => null));
+  }
+
+  promiseToDrawToGrid = ({ shape } = {}) => {
+
+    return new Promise((resolve) => {
+      shape = (shape) ? shape : this.getShape();
+      shape.position.x = 0;
+      const grid = this.generateGrid();
+      shape && shape.getOffsetSubShapes().forEach(subShapeCord => {
+        grid[subShapeCord.y][subShapeCord.x] = shape.tileType;
+      });
+
+      if (shape && !shape.tileType) {
+        shape = null;
+      }
+
+      this.setState({...this.state, sqSize: this.getSqSize(), grid, shape }, () => {
+        resolve();
+      });
+    })
+
   }
 
   getShape = () => {
@@ -92,69 +147,24 @@ export class GridMatrixBase extends React.PureComponent {
     }
   }
 
-  componentDidUpdate(prevProps) {
-    if (prevProps.shape !== this.getShape()) {
-      this.promiseToDrawToGrid();
-    }
-  }
-
-  handleResize = () => {
-    this.setState({ ...this.state, ...this.getGridSettings()});
-  }
-
-  generateGrid = () => {
-    return makeArray(this.getRowsCols().rows).map(() => makeArray(this.getRowsCols().cols).map(() => null));
-  }
-
-  promiseToDrawToGrid = ({ shape } = {}) => {
-
-    return new Promise((resolve) => {
-      shape = (shape) ? shape : this.getShape();
-      const grid = this.generateGrid();
-
-      shape && shape.getOffsetSubShapes().forEach(subShapeCord => {
-        grid[subShapeCord.y][subShapeCord.x] = shape.tileType;
-      });
-
-      if (shape && !shape.tileType) {
-        shape = null;
-      }
-
-      this.setState({...this.state, grid, shape}, () => {
-        resolve();
-      });
-    })
-
-  }
-
-  getGridSettings = () => {
+  getSqSize = () => {
     const rows = this.getRowsCols().rows;
-    const cols = this.getRowsCols().cols;
+    // const cols = this.getRowsCols().cols;
     const height = (this.containerRef.current) ? this.containerRef.current.getBoundingClientRect().height : window.innerHeight;
-    const width = (this.containerRef.current) ? this.containerRef.current.getBoundingClientRect().width : window.innerWidth;
+    // const width = (this.containerRef.current) ? this.containerRef.current.getBoundingClientRect().width : window.innerWidth;
 
-    const widthSqSize = Math.floor(width / cols);
+    // const widthSqSize = Math.floor(width / cols);
     const heightSqSize = Math.floor(height / rows);
-    const totalWidth = heightSqSize*cols;
+    // const totalWidth = widthSqSize*cols;
+    // const totalHeight = heightSqSize*rows;
 
-    const sqSize = ((totalWidth > window.innerWidth)
-    || (this.containerRef.current && totalWidth > this.containerRef.current.getBoundingClientRect().width))
-    ? widthSqSize : heightSqSize;
+    let sqSize = heightSqSize;
 
-    return { sqSize };
-  }
-
-  componentDidMount = () => {
-    this.setState(this.getGridSettings(), () => {
-      this.promiseToDrawToGrid();
-    });
-  }
-
-  componentWillUnmount = () => {
-    window.removeEventListener('resize', this.handleResize);
+    return sqSize;
   }
 
   render() {
+
     return (
       <styles.GridMatrixContainer ref={this.containerRef} {...this.props}>
         <styles.GridMatrix>
@@ -168,6 +178,8 @@ export class GridMatrixBase extends React.PureComponent {
   }
 }
 
+
+
 export default class GridMatrix extends GridMatrixBase {
 
   constructor(props) {
@@ -178,9 +190,43 @@ export default class GridMatrix extends GridMatrixBase {
     ];
     this.explodeReadyRows = [];
     this.timeOuts = [];
+    this.shapeMoverPromises = [];
   }
 
+  componentDidMount() {
+    this.handleResize(() => {
+      let promiseIndex;
+      const shapeMover = (nextDy) => {
+        const shapeMoverPromise = this.moveShape({nextDy}).then((x) => {
+          this.shapeMoverTimeout = setTimeout(() => {
+            shapeMover(1);
+            clearTimeout(this.shapeMoverTimeout);
+          }, this.props.moveSpeed);
 
+          this.shapeMoverPromises.splice(promiseIndex-1, 1);
+          this.timeOuts.push(this.shapeMoverTimeout);
+          promiseIndex = this.shapeMoverPromises.push(shapeMoverPromise);
+        });
+      }
+      shapeMover(0);
+    });
+
+    // setTimeout(() => {
+    //   Promise.all(this.shapeMoverPromises)
+    //   .then(this.moveShape({toDx: 21, debug: true}))
+    //   .then((collision) => {
+    //     // console.log(x);
+    //   });
+    // }, 2000)
+
+  }
+
+  componentWillUpdate(nextProps) {
+    super.componentWillUpdate && this.componentWillUpdate();
+    if (nextProps.gameOver) {
+      clearTimeout(this.shapeMoverTimeout);
+    }
+  }
 
   getTileCollisionType = (shapeTileCord, tileCord, nextDirection) => {
     let collision;
@@ -223,28 +269,31 @@ export default class GridMatrix extends GridMatrixBase {
       // Check collisions with the edges
       if (nextY > this.getRowsCols().rows-1) {
         collision = new Collision({
-          collisionLocation: collisionsLocations.BOTTOM
+          collisionLocation: collisionsLocations.BOTTOM,
+          collisionWith: 'bounds'
         });
         break;
       } else if (nextY < 0) {
         collision = new Collision({
-          collisionLocation: collisionsLocations.TOP
+          collisionLocation: collisionsLocations.TOP,
+          collisionWith: 'bounds'
         });
         break;
       }
 
       if (nextX > this.getRowsCols().cols-1) {
         collision = new Collision({
-          collisionLocation: collisionsLocations.RIGHT
+          collisionLocation: collisionsLocations.RIGHT,
+          collisionWith: 'bounds'
         });
         break;
       } else if (nextX < 0) {
         collision = new Collision({
-          collisionLocation: collisionsLocations.LEFT
+          collisionLocation: collisionsLocations.LEFT,
+          collisionWith: 'bounds'
         });
         break;
       }
-
 
       // Check colisions with the tiles (TODO: this is probably not performant)
       tileCollision = tiles.filter(tile => tile.position.x === nextX && tile.position.y === nextY)[0];
@@ -257,17 +306,24 @@ export default class GridMatrix extends GridMatrixBase {
       }
     }
 
+    if (shape.getShapeSize().height > shape.position.y
+    && shape.position.y === 0
+    && collision
+    && collision.collisionLocation === collisionsLocations.BOTTOM) {
+      collision.collisionLocation = collisionsLocations.OVERFLOW
+    }
+
     return collision;
   }
 
-  promiseToDrawToGrid = ({ shape, staticTiles } = {}) => {
+  promiseToDrawToGrid = ({ shape, staticTiles, resetTiles } = {}) => {
     return new Promise((resolve) => {
 
       shape = (shape) ? shape : this.getShape();
       staticTiles = (staticTiles) ? this.state.staticTiles.concat(staticTiles) : this.state.staticTiles;
+      staticTiles = (resetTiles) ? resetTiles : staticTiles;
 
       const grid = this.generateGrid();
-
       shape && shape.getOffsetSubShapes().forEach(subShapeCord => {
         grid[subShapeCord.y][subShapeCord.x] = shape.tileType;
       });
@@ -282,20 +338,34 @@ export default class GridMatrix extends GridMatrixBase {
     })
   }
 
-  moveShape = (nextDx, nextDy, nextDirection) => {
+  moveShape = ({nextDx = 0, nextDy = 0, toDx, nextDirection, debug}) => {
 
     const shape = this.getShape();
-    if (!shape) {
-      return;
+    if (!shape || this.props.paused || this.props.gameOver) {
+      return Promise.resolve();
     }
 
     let collision;
 
-    const moveCollision = this.getShapeCollision({shape, nextDx, nextDy});
-    if (!moveCollision) {
-      shape.position.x += nextDx;
-      shape.position.y += nextDy;
+    if (toDx !== undefined) {
+      const maxX = this.props.cols - shape.getShapeSize().width;
+      nextDx = toDx - shape.position.x - shape.getMinX();
+      if (toDx < 0) {
+        nextDx = -shape.position.x - shape.getMinX();
+      } else if (toDx > maxX) {
+        nextDx = maxX - shape.position.x;
+      }
     }
+
+    const moveCollision = this.getShapeCollision({shape, nextDx, nextDy});
+
+    if (moveCollision) {
+      nextDx = 0;
+      nextDy = 0;
+    }
+
+    shape.position.x += nextDx;
+    shape.position.y += nextDy;
 
     const rotateCollision = this.getShapeCollision({shape, nextDirection});
     if (!rotateCollision) {
@@ -305,25 +375,23 @@ export default class GridMatrix extends GridMatrixBase {
 
     collision = moveCollision || rotateCollision;
 
-    if (!collision || collision.collisionLocation !== collisionsLocations.BOTTOM) {
-      this.promiseToDrawToGrid({ shape });
+    if (collision && collision.collisionLocation === collisionsLocations.OVERFLOW) {
+      return this.props.promiseToEndGame();
+    } else if(!collision || collision.collisionLocation !== collisionsLocations.BOTTOM) {
+      return this.promiseToDrawToGrid({ shape });
     } else {
-
-      this.promiseToHandleCollision(collision)
+      return this.promiseToHandleCollision(collision)
       .then(this.animateLinesDestroyed)
+      .then(this.promiseToDestroyStaticTilesInRows)
       .then(({ collidingShape, rowsToDestroy } = {}) => {
-
         if (!collidingShape) {
           return;
         }
-
         const promises = [
           this.props.promiseToUpdateShapeQueue(),
-          this.props.promiseToUpdateScore({ rowsToDestroy, collidingShape })
+          this.props.promiseToUpdateLevelAndScore({ rowsToDestroy, collidingShape })
         ]
-
         return Promise.all(promises);
-
       })
       .catch(e => {
         // Uh oh
@@ -332,11 +400,36 @@ export default class GridMatrix extends GridMatrixBase {
     }
   }
 
-  destroyStaticTilesInRows = () => {
-    console.log();
+  promiseToDestroyStaticTilesInRows = ({collidingShape, rowsToDestroy} = {}) => {
+
+    return new Promise((resolve, reject) => {
+
+      if (!rowsToDestroy) {
+        resolve({collidingShape});
+        return;
+      }
+
+      const staticTiles = [].concat(this.state.staticTiles)
+      .filter(tile => {
+        return rowsToDestroy.indexOf(tile.position.y) === -1;
+      })
+      .map(tile => {
+        rowsToDestroy.forEach(row => {
+          if (tile.position.y < row) {
+            tile.position.y = tile.position.y + 1;
+          }
+        })
+        return tile;
+      });
+
+      return this.promiseToDrawToGrid({ resetTiles: staticTiles }).then(() => {
+        resolve({ collidingShape });
+      })
+    })
   }
 
-  animateLinesDestroyed = ({ collidingShape } = {}) => {
+  animateLinesDestroyed = ({ collidingShape, onTileAnimated } = {}) => {
+
     return new Promise((resolve, reject) => {
 
       if (!collidingShape) {
@@ -346,12 +439,16 @@ export default class GridMatrix extends GridMatrixBase {
 
       const rowsToDestroy = this.rowsToDestroy();
       const rowRefs = rowsToDestroy.map(k => this.rowRefs[k].current);
+      const shapeWidth = collidingShape.getShapeSize().width;
+      const collisionX1 = collidingShape.position.x + Math.floor(shapeWidth / 2) - 1;
+      const collisionX2 = collisionX1 + 1;
 
       if (rowRefs.length > 0) {
-        const promises = rowRefs.map(rowComponent => rowComponent.showExplosion(5));
-        const staticTiles = rowsToDestroy.map(x => makeArray(this.getRowsCols().cols)
-        .map(y => new Tile({position: new Shape.Cord(x,y), tileType: null})))
-        .reduce((a1,a2) => a1.concat(a2));
+        const promises = rowRefs.map(rowComponent => rowComponent.showExplosion({
+          atIndex1: (shapeWidth % 2 === 0) ? collisionX1 : collisionX2,
+          atIndex2: collisionX2
+        }));
+
         Promise.all(promises).then(() => {
           resolve({ collidingShape, rowsToDestroy });
         })
@@ -367,6 +464,7 @@ export default class GridMatrix extends GridMatrixBase {
 
       if (shape.collision) {
         resolve();
+        this.downInterval && clearInterval(this.downInterval);
         return;
       }
 
@@ -390,33 +488,52 @@ export default class GridMatrix extends GridMatrixBase {
     }).filter(v => v !== null);
   }
 
-  handleKeyDown = (e, { keyLabelPressed }) => {
-    let x = 0;
-    let y = 0;
-    let rotation;
+  handleUserInputMobile = (e, { keyLabelPressed, toDx }) => {
+    const shape = this.getShape();
+    if (shape.position.x !== toDx) {
+      this.moveShape({ toDx });
+    }
+  }
+
+  handleUserInput = (e, { keyLabelPressed, dx }) => {
+
+    let nextDx = 0;
+    let nextDy = 0;
+    let nextDirection;
 
     // Handle movement
     switch(keyLabelPressed) {
-      case keyLabels.UP:
-      y = -1;
-      break;
+      // case keyLabels.UP:
+      // y = -1;
+      // break;
       case keyLabels.DOWN:
-      y = 1;
+      nextDy = 1;
       break;
       case keyLabels.LEFT:
-      x = -1;
+      nextDx = (dx) ? -dx : -1;
       break;
       case keyLabels.RIGHT:
-      x = 1;
+      nextDx = (dx) ? dx : 1;
       break;
       case keyLabels.PRIMARY:
-      rotation = keyLabels.RIGHT;
+      nextDirection = keyLabels.RIGHT;
+      break;
+      case keyLabels.PAUSE:
+      this.props.promiseToPauseGame();
       break;
       default:
       break;
     }
 
-    this.moveShape(x, y, rotation);
+    this.moveShape({nextDx, nextDy, nextDirection});
+  }
+
+  handleQuickDown = () => {
+    this.downInterval = setInterval(() => {
+      this.moveShape({nextDx: 0, nextDy: 1}).then((collision) => {
+        collision && clearInterval(this.downInterval);
+      });
+    }, 10);
   }
 
   componentWillUnmount() {

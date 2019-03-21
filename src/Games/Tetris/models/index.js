@@ -6,6 +6,16 @@ export const scoreTypes = {
   TETRIS: 'tetris' // getting 4 lines
 }
 
+
+// Notes:
+
+// Associate with fragility
+// ie. glass shapes can be broken by heavier shapes like cement
+
+// Different shapes can be chosen for fight mode.
+// Their rotational abilitys are translated into fight abilities
+
+
 export const tileTypes = {
   A: 'a',
   B: 'b',
@@ -24,7 +34,8 @@ export const collisionsLocations = {
   TOP: 'top',
   BOTTOM: 'bottom',
   LEFT: 'left',
-  RIGHT: 'right'
+  RIGHT: 'right',
+  OVERFLOW: 'overflow'
 };
 
 export class Collision {
@@ -100,16 +111,36 @@ export class Shape extends Tile {
     return subShapes.map(position => new Tile({position, tileType}));
   }
 
+  getMinX(rotationalPosition) {
+    rotationalPosition = (rotationalPosition) ? rotationalPosition : this.rotationalPosition;
+    const subShapes = this.subShapes[rotationalPosition];
+    return Math.min.apply(this, subShapes.map(ss => ss.x));
+  }
+
+  getMinY(rotationalPosition) {
+    rotationalPosition = (rotationalPosition) ? rotationalPosition : this.rotationalPosition;
+    const subShapes = this.subShapes[rotationalPosition];
+    return Math.min.apply(this, subShapes.map(ss => ss.y));
+  }
+
   setMinBoundingGridFromSubShape(rotationalPosition) {
     rotationalPosition = (rotationalPosition) ? rotationalPosition : this.rotationalPosition;
     const subShapes = this.subShapes[rotationalPosition];
-    const minX = Math.min.apply(this, subShapes.map(ss => ss.x));
-    const minY = Math.min.apply(this, subShapes.map(ss => ss.y));
+    const minX = this.getMinX(rotationalPosition);
+    const minY = this.getMinY(rotationalPosition);
     return subShapes.map(ss => {
       ss.x -= (minX > 0) ? minX : 0;
       ss.y -= (minX > 0) ? minY : 0;
       return ss;
     });
+  }
+
+  getShapeSize(rotationalPosition) {
+    rotationalPosition = (rotationalPosition) ? rotationalPosition : this.rotationalPosition;
+    const subShapes = this.subShapes[rotationalPosition];
+    const width = Math.max.apply(this, subShapes.map(ss => ss.x)) + 1;
+    const height = Math.max.apply(this, subShapes.map(ss => ss.y)) + 1;
+    return { width, height };
   }
 }
 
@@ -152,6 +183,36 @@ export class LShape extends Shape {
         new Shape.Cord(1,1),
         new Shape.Cord(2,1),
         new Shape.Cord(2,0)
+      ]
+    }
+  }
+}
+
+export class BoomerangShape extends Shape {
+  constructor(props) {
+    super(props);
+    this.subShapes = {
+      [rotationalPositions.N]: [
+        new Shape.Cord(0,0),
+        new Shape.Cord(0,1),
+        new Shape.Cord(0,2),
+        new Shape.Cord(1,0),
+        new Shape.Cord(2,0)
+      ]
+    }
+  }
+}
+
+export class WTFShape extends Shape {
+  constructor(props) {
+    super(props);
+    this.subShapes = {
+      [rotationalPositions.N]: [
+        new Shape.Cord(1,0),
+        new Shape.Cord(0,1),
+        new Shape.Cord(1,1),
+        new Shape.Cord(2,1),
+        new Shape.Cord(1,2)
       ]
     }
   }

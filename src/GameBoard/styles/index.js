@@ -1,6 +1,12 @@
 import styled, { createGlobalStyle } from 'styled-components';
 
 export const GameBoardGlobal = createGlobalStyle`
+  html, body {
+    position: fixed;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+  }
   * {
     margin: 0 auto;
     box-sizing: border-box;

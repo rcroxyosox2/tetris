@@ -28,7 +28,6 @@ const withKeyControls = (WrappedComponent) => {
     }
 
     handleKeyDown = (e) => {
-
       // e.preventDefault();
       var keyCode = e.keyCode;
 
@@ -42,13 +41,13 @@ const withKeyControls = (WrappedComponent) => {
         e.preventDefault();
       }
 
-      if (keyPressed !== keyLabels.UP && keyPressed !== keyLabels.DOWN) {
+      if (keyPressed !== keyLabels.DOWN) {
         this.handleGameKeydown(e, { keyCode });
         return true;
       }
 
       if (!(keyCode in this.timers)) {
-          this.timers[keyCode] = null;
+          delete this.timers[keyCode];
           this.handleGameKeydown(e, {keyCode});
           if (this.repeat !== 0) {
             this.timers[keyCode] = setInterval(() => {
@@ -82,7 +81,7 @@ const withKeyControls = (WrappedComponent) => {
     render() {
       return (
         <React.Fragment>
-          <WrappedComponent keyControlRef={this.keyControlRef} />
+          <WrappedComponent {...this.props} ref={this.keyControlRef} />
         </React.Fragment>
       );
     }

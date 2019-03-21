@@ -6,17 +6,19 @@ const directions = {
 }
 
 const actions = {
-  PRIMARY: 'primary'
+  PRIMARY: 'primary',
+  PAUSE: 'pause'
 }
 
 const keyLabels = {...directions, ...actions};
 
 const keyCodes = {
-  [directions.UP]: [38, 87],
+  // [directions.UP]: [38, 87],
   [directions.DOWN]: [40, 83],
   [directions.LEFT]: [37, 65],
   [directions.RIGHT]: [39, 68],
-  [actions.PRIMARY]: [13, 32] //spacebar, enter
+  [actions.PRIMARY]: [13, 38, 87], //spacebar, enter
+  [actions.PAUSE]: [80, 32]
 };
 
 const getKeyLabelPressed = (keyCode) => {

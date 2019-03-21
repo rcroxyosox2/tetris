@@ -1,11 +1,8 @@
 import styled, { keyframes, css } from 'styled-components';
 
 const explosion = keyframes`
-  0%   {background-color: green;}
-  25%  {background-color: black;}
-  50%  {background-color: yellow;}
-  75%  {background-color: blue;}
-  100% {background-color: transparent;}
+  0%   {transform: scale(1) rotate(0deg)}
+  100% {transform: rotate(180deg); background: transparent; border-bottom: none;}
 `;
 
 const tileProps = {
@@ -38,7 +35,7 @@ export const GridSquare = styled.div.attrs({className: 'GridSquare'})`
   ${props => {
     if (props.exploding) {
       return css`
-        animation: ${explosion} 100ms normal forwards ease-in-out;
+        animation: ${explosion} 50ms normal forwards ease-in-out;
         animation-iteration-count: 1;
       `
     }
@@ -68,5 +65,5 @@ export const GridMatrix = styled.div.attrs({className: 'GridMatrix'})`
 
 export const GridMatrixContainer = styled.div.attrs({className: 'GridMatrixContainer'})`
   border: 1px solid red;
-  height: ${ props => props.mini ? '100px' : '100vh'};
+  height: ${ props => props.mini ? '100px' : '60vh'};
 `
