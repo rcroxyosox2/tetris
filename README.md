@@ -68,3 +68,6 @@ This section has moved here: https://facebook.github.io/create-react-app/docs/de
 This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
 # tetris
 # (but something better than tetris)
+# this is the first commit on the a_branch
+# this is the second commit on the a_branch
+# this is the third commit on the a_branch
